@@ -1,23 +1,44 @@
-import { useState } from "react";
 import { Image, ImageBackground, StyleSheet, TouchableOpacity } from "react-native";
-import { Easing, cancelAnimation, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  interpolate,
+  useAnimatedProps,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { ReText, mixColor } from "react-native-redash";
 import FlockCanvas from "@/components/FlockCanvas";
-import { Text, View } from "@/components/Themed";
+import { Text } from "@/components/Themed";
 
 export default function TabOneScreen() {
-  const [playing, setPlaying] = useState(false);
   const progress = useSharedValue(0);
 
   const handlePress = () => {
-    if (!playing) {
-      setPlaying(true);
-      progress.value = withTiming(1, { duration: 2000, easing: Easing.linear });
-    } else {
-      cancelAnimation(progress);
-      progress.value = 0;
-      setPlaying(false);
-    }
+    cancelAnimation(progress);
+    progress.value = 0;
+    progress.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.cubic) });
   };
+
+  const coinText = useDerivedValue(() => {
+    const coins = interpolate(progress.value, [0, 0.8, 1], [100, 100, 126]);
+    return Math.round(coins).toString();
+  }, [progress]);
+
+  const coinContainerAnimatedProps = useAnimatedProps(() => {
+    const scale = interpolate(progress.value, [0, 0.8, 0.9, 1], [1, 1, 1.1, 1]);
+    const color = mixColor(
+      interpolate(progress.value, [0.8, 0.9, 1], [0, 1, 0]),
+      "hsl(120 60.69% 33.92%)",
+      "hsl(120 100% 35.69%)"
+    );
+
+    return {
+      transform: [{ scale }],
+      backgroundColor: color,
+    };
+  }, [progress]);
 
   return (
     <>
@@ -28,14 +49,14 @@ export default function TabOneScreen() {
         style={styles.container}
         resizeMode="cover"
       >
-        <View style={styles.currencyContainer}>
+        <Animated.View style={styles.currencyContainer} animatedProps={coinContainerAnimatedProps}>
           <Image
             source={require("@/assets/images/coin_gold.png")}
             style={{ width: 24, height: 24, aspectRatio: 1 }}
             resizeMode="contain"
           />
-          <Text style={styles.currency}>100</Text>
-        </View>
+          <ReText style={styles.currency} text={coinText} />
+        </Animated.View>
         <Text style={styles.title}>Hello World</Text>
         <TouchableOpacity style={styles.button} onPress={handlePress}>
           <Text style={styles.buttonText}>Claim reward</Text>
@@ -80,7 +101,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "forestgreen",
+    backgroundColor: "hsl(120 60.69% 33.92%)",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -95,6 +116,7 @@ const styles = StyleSheet.create({
   },
   currency: {
     fontSize: 20,
+    fontVariant: ["tabular-nums"],
     fontWeight: "bold",
     color: "white",
   },

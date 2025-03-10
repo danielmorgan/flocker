@@ -1,33 +1,27 @@
 import { useState } from "react";
 import { Image, ImageBackground, StyleSheet, TouchableOpacity } from "react-native";
-import {
-  cancelAnimation,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
+import { Easing, cancelAnimation, useSharedValue, withTiming } from "react-native-reanimated";
 import FlockCanvas from "@/components/FlockCanvas";
 import { Text, View } from "@/components/Themed";
 
 export default function TabOneScreen() {
   const [playing, setPlaying] = useState(false);
-  const sv = useSharedValue(0);
+  const progress = useSharedValue(0);
 
   const handlePress = () => {
     if (!playing) {
-      sv.value = withRepeat(withSequence(withTiming(5), withTiming(1)), -1);
       setPlaying(true);
+      progress.value = withTiming(1, { duration: 2000, easing: Easing.linear });
     } else {
-      cancelAnimation(sv);
+      cancelAnimation(progress);
+      progress.value = 0;
       setPlaying(false);
     }
   };
 
   return (
     <>
-      <FlockCanvas sv={sv} />
+      <FlockCanvas progress={progress} />
 
       <ImageBackground
         source={require("@/assets/images/colored_talltrees.png")}

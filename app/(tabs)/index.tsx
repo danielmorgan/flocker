@@ -12,18 +12,44 @@ import { ReText, mixColor } from "react-native-redash";
 import FlockCanvas from "@/components/FlockCanvas";
 import { Text } from "@/components/Themed";
 
+const COINS_PER_PRESS = 25;
+
 export default function TabOneScreen() {
   const progress = useSharedValue(0);
+  const displayedCoins = useSharedValue(100);
+  const isAnimating = useSharedValue(false);
 
   const handlePress = () => {
     cancelAnimation(progress);
     progress.value = 0;
-    progress.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.cubic) });
+
+    isAnimating.value = true;
+    const startingCoins = displayedCoins.value;
+    const targetCoins = startingCoins + COINS_PER_PRESS;
+
+    progress.value = withTiming(
+      1,
+      {
+        duration: 2500,
+        easing: Easing.inOut(Easing.cubic),
+      },
+      (finished) => {
+        if (finished) {
+          displayedCoins.value = targetCoins;
+          isAnimating.value = false;
+        }
+      }
+    );
+
+    displayedCoins.value = withTiming(targetCoins, {
+      duration: 2500,
+      easing: Easing.inOut(Easing.cubic),
+    });
   };
 
   const coinText = useDerivedValue(() => {
-    const coins = interpolate(progress.value, [0, 0.8, 1], [100, 100, 126]);
-    return Math.round(coins).toString();
+    const rounded = Math.round(displayedCoins.value);
+    return new Intl.NumberFormat("en-GB").format(rounded).toString();
   }, [progress]);
 
   const coinContainerAnimatedProps = useAnimatedProps(() => {
@@ -33,7 +59,6 @@ export default function TabOneScreen() {
       "hsl(120 60.69% 33.92%)",
       "hsl(120 100% 35.69%)"
     );
-
     return {
       transform: [{ scale }],
       backgroundColor: color,
@@ -42,7 +67,7 @@ export default function TabOneScreen() {
 
   return (
     <>
-      <FlockCanvas progress={progress} />
+      <FlockCanvas SPRITE_COUNT={COINS_PER_PRESS} progress={progress} />
 
       <ImageBackground
         source={require("@/assets/images/colored_talltrees.png")}

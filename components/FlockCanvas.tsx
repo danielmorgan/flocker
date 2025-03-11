@@ -19,16 +19,17 @@ import {
 
 const SPRITE_SIZE = 20;
 
-const SPRITE_COUNT = 26;
+// const SPRITE_COUNT = 26;
 const SPRITE_DELAY = 0.03;
 const SPREAD_RADIUS = 40;
 const ROTATION_CYCLES = 0.3;
 
 interface Props {
+  SPRITE_COUNT: number;
   progress: SharedValue<number>;
 }
 
-const FlockCanvas = ({ progress }: Props) => {
+const FlockCanvas = ({ SPRITE_COUNT, progress }: Props) => {
   const coinTexture = useImageAsTexture(require("@/assets/images/coin_gold_sm.png"));
   const font = useFont(require("@/assets/fonts/SpaceMono-Regular.ttf"), 16);
 

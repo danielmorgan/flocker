@@ -1,6 +1,7 @@
 import { useAudioPlayer } from "expo-audio";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, ImageBackground, StyleSheet, TouchableOpacity } from "react-native";
+import { atom, useAtom } from "jotai";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -11,41 +12,47 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { ReText, mixColor } from "react-native-redash";
+import { ReText, clamp, mixColor } from "react-native-redash";
 import FlockCanvas from "@/components/FlockCanvas";
+import SimpleCoinCounter from "@/components/SimpleCoinCounter";
 import { Text } from "@/components/Themed";
 
-const COINS_PER_PRESS = 25;
+const COINS_PER_PRESS = 20;
+
+export const coinAtom = atom(300);
 
 export default function TabOneScreen() {
-  const sfx = useAudioPlayer(require("@/assets/audio/chips-handle-1.mp3"));
-  const playSequence = useMemo(
+  const sfx = useAudioPlayer(require("@/assets/audio/coin-pickup.mp3"));
+  const playSounds = useMemo(
     () => () => {
-      setTimeout(() => {
-        sfx.seekTo(0);
-        sfx.play();
-      }, 1700);
+      sfx.seekTo(0);
+      sfx.play();
     },
     [sfx]
   );
 
+  const [coins, setCoins] = useAtom(coinAtom);
+  const prevCoinsRef = useRef(coins);
   const progress = useSharedValue(0);
-  const displayedCoins = useSharedValue(100);
+  const displayedCoins = useSharedValue(coins);
   const [isAnimating, setIsAnimating] = useState(false);
+  const spriteCount = useMemo(() => {
+    return clamp(coins - prevCoinsRef.current, 10, 30);
+  }, [coins, prevCoinsRef]);
 
-  const handlePress = async () => {
-    if (isAnimating) {
-      return;
+  useEffect(() => {
+    if (prevCoinsRef.current !== coins) {
+      prevCoinsRef.current = coins;
+      animate();
     }
+  }, [coins]);
 
+  const animate = async () => {
     cancelAnimation(progress);
     progress.value = 0;
-
     setIsAnimating(true);
-    const startingCoins = displayedCoins.value;
-    const targetCoins = startingCoins + COINS_PER_PRESS;
 
-    playSequence();
+    setTimeout(() => playSounds(), 1600);
 
     progress.value = withTiming(
       1,
@@ -55,13 +62,13 @@ export default function TabOneScreen() {
       },
       (finished) => {
         if (finished) {
-          displayedCoins.value = targetCoins;
+          displayedCoins.value = coins;
           runOnJS(setIsAnimating)(false);
         }
       }
     );
 
-    displayedCoins.value = withTiming(targetCoins, {
+    displayedCoins.value = withTiming(coins, {
       duration: 2500,
       easing: Easing.inOut(Easing.cubic),
     });
@@ -85,9 +92,14 @@ export default function TabOneScreen() {
     };
   }, [progress]);
 
+  const handlePress = () => {
+    if (isAnimating) return;
+    setCoins(coins + COINS_PER_PRESS);
+  };
+
   return (
     <>
-      <FlockCanvas SPRITE_COUNT={COINS_PER_PRESS} progress={progress} />
+      <FlockCanvas SPRITE_COUNT={spriteCount} progress={progress} />
 
       <ImageBackground
         source={require("@/assets/images/colored_talltrees.png")}
@@ -108,8 +120,9 @@ export default function TabOneScreen() {
           onPress={handlePress}
           disabled={isAnimating}
         >
-          <Text style={styles.buttonText}>Claim reward</Text>
+          <Text style={styles.buttonText}>Claim {COINS_PER_PRESS}</Text>
         </TouchableOpacity>
+        <SimpleCoinCounter />
       </ImageBackground>
     </>
   );

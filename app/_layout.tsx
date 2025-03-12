@@ -6,8 +6,12 @@ import { useEffect } from "react";
 import { Alert } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Provider, createStore } from "jotai";
 import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
+import { coinAtom } from "./(tabs)";
+
+const store = createStore();
 
 registerDevMenuItems([
   {
@@ -15,6 +19,13 @@ registerDevMenuItems([
     callback: () => {
       Alert.alert("Custom Code", "Your custom code was executed!");
       console.log("Custom code was executed from dev menu");
+    },
+  },
+  {
+    name: "Claim 27 coins",
+    callback: () => {
+      console.log("Claiming 27 coins from dev menu");
+      store.set(coinAtom, (prev) => prev + 27);
     },
   },
 ]);
@@ -60,11 +71,13 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        </Stack>
+      </ThemeProvider>
+    </Provider>
   );
 }

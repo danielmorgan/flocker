@@ -1,8 +1,11 @@
+import { useAudioPlayer } from "expo-audio";
+import { useMemo, useState } from "react";
 import { Image, ImageBackground, StyleSheet, TouchableOpacity } from "react-native";
 import Animated, {
   Easing,
   cancelAnimation,
   interpolate,
+  runOnJS,
   useAnimatedProps,
   useDerivedValue,
   useSharedValue,
@@ -15,17 +18,34 @@ import { Text } from "@/components/Themed";
 const COINS_PER_PRESS = 25;
 
 export default function TabOneScreen() {
+  const sfx = useAudioPlayer(require("@/assets/audio/chips-handle-1.mp3"));
+  const playSequence = useMemo(
+    () => () => {
+      setTimeout(() => {
+        sfx.seekTo(0);
+        sfx.play();
+      }, 1700);
+    },
+    [sfx]
+  );
+
   const progress = useSharedValue(0);
   const displayedCoins = useSharedValue(100);
-  const isAnimating = useSharedValue(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  const handlePress = () => {
+  const handlePress = async () => {
+    if (isAnimating) {
+      return;
+    }
+
     cancelAnimation(progress);
     progress.value = 0;
 
-    isAnimating.value = true;
+    setIsAnimating(true);
     const startingCoins = displayedCoins.value;
     const targetCoins = startingCoins + COINS_PER_PRESS;
+
+    playSequence();
 
     progress.value = withTiming(
       1,
@@ -36,7 +56,7 @@ export default function TabOneScreen() {
       (finished) => {
         if (finished) {
           displayedCoins.value = targetCoins;
-          isAnimating.value = false;
+          runOnJS(setIsAnimating)(false);
         }
       }
     );
@@ -83,7 +103,11 @@ export default function TabOneScreen() {
           <ReText style={styles.currency} text={coinText} />
         </Animated.View>
         <Text style={styles.title}>Hello World</Text>
-        <TouchableOpacity style={styles.button} onPress={handlePress}>
+        <TouchableOpacity
+          style={[styles.button, { opacity: isAnimating ? 0.5 : 1 }]}
+          onPress={handlePress}
+          disabled={isAnimating}
+        >
           <Text style={styles.buttonText}>Claim reward</Text>
         </TouchableOpacity>
       </ImageBackground>
